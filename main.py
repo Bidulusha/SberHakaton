@@ -1,31 +1,48 @@
 import easyocr
 import csv
 import cv2
+import os
 
-image_path = 'cheks/chek1.jpg'
+# PATHS
+cheks_folder_path = 'cheks/'
 
-reader = easyocr.Reader(['ru', 'en'])
-results = reader.readtext(image_path)
+index_of_image = 0
+for file in os.listdir(cheks_folder_path):
+    # PATH TO IMAGE
+    image_path = cheks_folder_path + file
 
-image = cv2.imread(image_path)
+    # PATH TO CROPPED IMAGES
+    cropped_path = 'cropped/cropped' + str(index_of_image) + '/'
 
+    # EASYOCR READER
+    reader = easyocr.Reader(['ru', 'en'])
+    results = reader.readtext(image_path)
 
-i = 0
+    image = cv2.imread(image_path)
 
-with open('info.csv', 'w', newline='', encoding='utf-8') as csvfile:
-    fieldnames = ['filename', 'text']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter= '\t')
+    if not os.path.isdir(cropped_path):
+        os.mkdir(cropped_path)
 
-    writer.writeheader()
+    index_of_word = 0
+    with open(cropped_path +'cropped' +'.csv', 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['filename', 'text']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter= '\t')
 
-    for (cords, text, accuracity) in results:
+        writer.writeheader()
 
-        cropped = image[cords[0][1]:cords[2][1], cords[0][0]: cords[2][0]]
-        cv2.imwrite('cropped/cropped' + str(i) + '.jpg', cropped)
-        
-        writer.writerow({'filename': 'cropped' + str(i) +  '.jpg', 'text': text})
+        for (cords, text, accuracity) in results:
 
-        i += 1
+            try:
+                cropped = image[cords[0][1]:cords[2][1], cords[0][0]: cords[2][0]]
+            except TypeError:
+                print(cords[0][1], cords[2][1], cords[0][0],cords[2][0])
+            cv2.imwrite(cropped_path + 'cropped' + str(index_of_word) + '.jpg', cropped)
+            
+            writer.writerow({'filename': 'cropped' + str(index_of_word) +  '.jpg', 'text': text})
+
+            index_of_word += 1
+    
+    index_of_image += 1
 
 
 
