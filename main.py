@@ -4,7 +4,7 @@ import cv2
 import os
 
 # PATHS
-cheks_folder_path = 'cheks/'
+cheks_folder_path = 'checks/'
 
 index_of_image = 0
 
