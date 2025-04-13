@@ -109,7 +109,19 @@ class CheckBot:
 
         @self.__bot.message_handler(commands=['cancel'])
         async def HandlerCancel(message):
-            await self.__HandlerNext(message, False)
+            if message.chat.id not in self.__userInfo:
+                self.__bot.send_message(
+                    message.chat.id,
+                    text='Where is nothing we can do'
+                )
+            else:
+                self.__userInfo[message.chat.id]['additional'] = 'swap'
+
+                temp = self.__userInfo[message.chat.id]['actual']
+                self.__userInfo[message.chat.id]['actual'] = self.__userInfo[message.chat.id]['last']
+                self.__userInfo[message.chat.id]['last'] = temp
+
+                await self.__HandlerNext(message, False)
 
         # BUTTONS
         @self.__bot.callback_query_handler(func=lambda call: True)
@@ -117,7 +129,17 @@ class CheckBot:
             message = call.message
 
             if call.data == 'yes':
-                await self.__HandlerNext(message) 
+                if self.__userInfo[message.chat.id]['additional'] == 'swap':
+
+                    self.__userInfo[message.chat.id]['additional'] = 'none'
+
+                    temp = self.__userInfo[message.chat.id]['actual']
+                    self.__userInfo[message.chat.id]['actual'] = self.__userInfo[message.chat.id]['last']
+                    self.__userInfo[message.chat.id]['last'] = temp
+
+                    await self.__HandlerNext(message, False)
+                else:
+                    await self.__HandlerNext(message) 
 
             elif call.data == 'no':
                 self.__tempActualFile = self.__actualFile
@@ -136,10 +158,10 @@ class CheckBot:
         # NO ONE COMMAND
         @self.__bot.message_handler(func=lambda message: True)  # Ловит ВСЕ сообщения
         async def HandlerUnknown(message):
-            if self.__userstate in ['waiting for text']:  # ПЕРЕДЕЛАТЬ
+            if self.__userInfo[message.chat.id]['status'] in ['waiting text']:  # ПЕРЕДЕЛАТЬ
                 self.__GetCorrectText(message)
-                await self.__HandlerNext(message, False) 
-
+                await self.__HandlerNext(message) 
+                self.__userInfo[message.chat.id]['status'] = 'none'
             else:
                 await self.__bot.reply_to(message, "Извините, я не понимаю эту команду 卐\n"
                                                 "Попробуйте /start, /next или /cancel")
@@ -164,13 +186,14 @@ class CheckBot:
     async def __HandlerNext(self, message, next = True):
 
         if next:
-            self.__MoveActualFile()
-            if message.char.id in self.__userInfo:
+            await self.__MoveActualFile()
+            if message.chat.id in self.__userInfo:
                 self.__userInfo[message.chat.id]['last'] = self.__userInfo[message.chat.id]['actual']
-                self.__userInfo[message.chat.id]['actural'] = self.__actualFile
+                self.__userInfo[message.chat.id]['actual'] = self.__actualFile
+                self.__userInfo[message.chat.id]['status'] = 'waiting text'
+                self.__userInfo[message.chat.id]['additional'] = 'none'
             else:
-                self.__userInfo[message.chat.id]['actual'] = self.__userInfo[message.chat.id]['last'] = self.__actualFile
-
+                self.__userInfo[message.chat.id] = {'actual': self.__actualFile, 'last': self.__actualFile, 'status': 'waiting text', 'additional': 'none'}
 
         photo = await self.__GetImage(message)
         await self.__bot.send_photo(
@@ -193,12 +216,9 @@ class CheckBot:
             reply_markup=keyboard
         )
 
+
     #CANCEl
     async def __HandlerCancel(self, message):
-        if self.__userstate == 'waiting for text': # ПЕРЕДЕЛАТь
-            await self.__HandlerNext(message)
-            return
-        self.__userInfo = 'waiting for text'
         await self.__bot.send_message(
             message.chat.id,
             text='Повторите набор'
