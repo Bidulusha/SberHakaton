@@ -109,12 +109,7 @@ class CheckBot:
 
         @self.__bot.message_handler(commands=['cancel'])
         async def HandlerCancel(message):
-            if not self.__pressCancel:
-                await self.__HandlerCancel(message)
-                self.__pressCancel = True
-            else:
-                self.__pressCancel = False
-                await self.__HandlerNext(message)
+            await self.__HandlerNext(message, False)
 
         # BUTTONS
         @self.__bot.callback_query_handler(func=lambda call: True)

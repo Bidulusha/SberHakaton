@@ -1,4 +1,6 @@
 ./.venv
 ./cheks
 ./cropped
+./cropped/*
+./state.txt
 ./.venv/*
