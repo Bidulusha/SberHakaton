@@ -1,6 +1,4 @@
-./.venv
-./checks/*
-./cropped
-./cropped/*
-./state.txt
-./.venv/*
+/.venv
+checks/
+cropped/
+state.txt
